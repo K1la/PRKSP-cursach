@@ -1,3 +1,19 @@
 .vscode
 .idea
 .env
+bin/
+tmp/
+coverage.out
+
+# Go
+*.test
+
+# Node / Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env*.local
+
+# OS / editor
+.DS_Store
+Thumbs.db
