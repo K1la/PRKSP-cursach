@@ -1,0 +1,5 @@
+DROP TABLE IF EXISTS reviews;
+DROP TABLE IF EXISTS bookings;
+DROP TABLE IF EXISTS parking_spots;
+DROP TABLE IF EXISTS parking_lots;
+DROP TABLE IF EXISTS users;
