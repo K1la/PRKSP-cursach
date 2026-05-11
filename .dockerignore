@@ -1,0 +1,10 @@
+.git
+.vscode
+.idea
+frontend/node_modules
+frontend/.next
+node_modules
+bin
+tmp
+*.log
+.env

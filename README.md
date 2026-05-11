@@ -6,6 +6,10 @@
 
 Fullstack service for searching and booking parking spots. The backend is written in Go with chi, pgx and PostgreSQL; the frontend uses Next.js App Router, TypeScript, Tailwind CSS and Leaflet.
 
+## Screenshot
+
+![Home page placeholder](docs/screenshot-placeholder.svg)
+
 ## Quick Start
 
 ```bash
@@ -16,6 +20,8 @@ Backend: `http://localhost:8080`
 Frontend: `http://localhost:3000`  
 Health: `http://localhost:8080/health`
 
+On startup the backend applies SQL migrations from `migrations/*.up.sql` once using the `schema_migrations` table. Disable this behavior with `DB_AUTO_MIGRATE=false`.
+
 ## Development
 
 ```bash
@@ -24,6 +30,22 @@ cd frontend && npm run dev
 ```
 
 Set local variables from `.env.example`. PostgreSQL is expected at `postgres://postgres:postgres@localhost:5432/parking?sslmode=disable`.
+
+Seed demo data:
+
+```bash
+make seed
+# or, if the database is running in Docker:
+docker compose run --rm seed
+```
+
+Demo credentials:
+
+| Email | Password | Role |
+| --- | --- | --- |
+| `admin@parkease.ru` | `password123` | admin |
+| `owner1@parkease.ru` | `password123` | owner |
+| `user1@parkease.ru` | `password123` | user |
 
 ## Project Structure
 
@@ -41,6 +63,7 @@ frontend/src/app        Next.js App Router pages
 frontend/src/components UI and feature components
 frontend/src/lib        API client and utilities
 frontend/src/types      TypeScript contracts
+docs/uml                Mermaid UML diagrams
 ```
 
 ## Useful Commands
@@ -53,17 +76,51 @@ make frontend-dev
 make frontend-build
 ```
 
-## API Snapshot
+## Technologies
 
-| Method | Path | Description |
-| --- | --- | --- |
-| GET | `/health` | Service and database status |
-| POST | `/api/v1/auth/register` | User registration |
-| POST | `/api/v1/auth/login` | User login |
-| GET | `/api/v1/parking-lots` | Parking search |
-| POST | `/api/v1/bookings` | Create booking |
+| Layer | Stack |
+| --- | --- |
+| Backend | Go, chi, pgx, golang-jwt, bcrypt, slog |
+| Frontend | Next.js 14 App Router, TypeScript, Tailwind CSS |
+| Database | PostgreSQL 16 |
+| Map | Leaflet, react-leaflet, OpenStreetMap |
+| Containers | Docker, docker-compose |
+| Tests | Go testing, fuzz tests |
 
-More endpoints will be implemented in the next backend stage.
+## API Documentation
+
+See [docs/api.md](docs/api.md).
+
+## Testing
+
+```bash
+go test ./... -count=1
+go test ./internal/validator/ -fuzz=. -fuzztime=30s
+cd frontend && npm run lint && npm run build
+```
+
+## 12-Factor App
+
+| Factor | Implementation |
+| --- | --- |
+| Config | Environment variables in `.env.example` |
+| Backing services | PostgreSQL via `DATABASE_URL` |
+| Processes | Stateless Go API and Next.js frontend |
+| Logs | Structured JSON logs to stdout through `slog` |
+| Port binding | `PORT` for backend, `3000` for frontend |
+| Disposability | Graceful shutdown in `cmd/server/main.go` |
+
+## Deploy
+
+For Railway or another Docker platform, provide `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGINS`, `NEXT_PUBLIC_API_URL`, then deploy backend and frontend containers from the included Dockerfiles.
+
+## UML
+
+- [Use case](docs/uml/use-case.md)
+- [ER diagram](docs/uml/er-diagram.md)
+- [Booking sequence](docs/uml/sequence-booking.md)
+- [Component diagram](docs/uml/component.md)
+- [Class diagram](docs/uml/class-diagram.md)
 
 ## License
 
