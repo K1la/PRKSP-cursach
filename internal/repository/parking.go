@@ -22,6 +22,8 @@ type ParkingLotFilter struct {
 	Latitude  *float64
 	Longitude *float64
 	RadiusKM  *float64
+	MaxPrice  *float64
+	SpotType  *model.SpotType
 	Limit     int
 	Offset    int
 }
@@ -77,6 +79,19 @@ func (r *ParkingRepository) List(ctx context.Context, filter ParkingLotFilter) (
 				)
 			) <= $%d
 		`, len(args)-2, len(args)-1, len(args)-2, len(args))
+	}
+	if filter.MaxPrice != nil {
+		args = append(args, *filter.MaxPrice)
+		query += fmt.Sprintf(` AND price_per_hour <= $%d`, len(args))
+	}
+	if filter.SpotType != nil {
+		args = append(args, *filter.SpotType)
+		query += fmt.Sprintf(` AND EXISTS (
+			SELECT 1 FROM parking_spots ps
+			WHERE ps.parking_lot_id = parking_lots.id
+			  AND ps.spot_type = $%d
+			  AND ps.is_available = TRUE
+		)`, len(args))
 	}
 	args = append(args, filter.Limit, filter.Offset)
 	query += fmt.Sprintf(` ORDER BY created_at DESC LIMIT $%d OFFSET $%d`, len(args)-1, len(args))

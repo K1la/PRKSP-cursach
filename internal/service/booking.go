@@ -15,8 +15,22 @@ import (
 )
 
 type BookingService struct {
-	bookings *repository.BookingRepository
-	parkings *repository.ParkingRepository
+	bookings bookingStore
+	parkings parkingGetter
+}
+
+type bookingStore interface {
+	GetSpotBookingInfo(context.Context, uuid.UUID) (repository.SpotBookingInfo, error)
+	HasOverlap(context.Context, uuid.UUID, time.Time, time.Time) (bool, error)
+	Create(context.Context, repository.CreateBookingParams) (model.Booking, error)
+	GetByID(context.Context, uuid.UUID) (model.Booking, error)
+	ListByUser(context.Context, uuid.UUID, int, int) ([]model.Booking, error)
+	ListByParkingLot(context.Context, uuid.UUID, int, int) ([]model.Booking, error)
+	Cancel(context.Context, uuid.UUID) (model.Booking, error)
+}
+
+type parkingGetter interface {
+	GetByID(context.Context, uuid.UUID) (model.ParkingLot, error)
 }
 
 type BookingInput struct {
@@ -26,7 +40,7 @@ type BookingInput struct {
 	VehiclePlate  string    `json:"vehicle_plate"`
 }
 
-func NewBookingService(bookings *repository.BookingRepository, parkings *repository.ParkingRepository) *BookingService {
+func NewBookingService(bookings bookingStore, parkings parkingGetter) *BookingService {
 	return &BookingService{bookings: bookings, parkings: parkings}
 }
 

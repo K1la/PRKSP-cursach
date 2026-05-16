@@ -8,10 +8,14 @@ import (
 )
 
 type AdminService struct {
-	admin *repository.AdminRepository
+	admin adminStore
 }
 
-func NewAdminService(admin *repository.AdminRepository) *AdminService {
+type adminStore interface {
+	Stats(context.Context) (repository.Stats, error)
+}
+
+func NewAdminService(admin adminStore) *AdminService {
 	return &AdminService{admin: admin}
 }
 

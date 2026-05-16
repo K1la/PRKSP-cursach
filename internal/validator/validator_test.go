@@ -54,3 +54,12 @@ func FuzzValidateVehiclePlate(f *testing.F) {
 		_ = ValidateVehiclePlate(plate)
 	})
 }
+
+func FuzzParseBookingDate(f *testing.F) {
+	f.Add("2026-05-15T12:00:00Z")
+	f.Add("")
+	f.Add("not-a-date")
+	f.Fuzz(func(t *testing.T, raw string) {
+		_, _ = time.Parse(time.RFC3339, raw)
+	})
+}

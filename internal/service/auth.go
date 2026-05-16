@@ -22,8 +22,17 @@ const (
 )
 
 type AuthService struct {
-	users *repository.UserRepository
+	users userStore
 	cfg   config.Config
+}
+
+type userStore interface {
+	Create(context.Context, repository.CreateUserParams) (model.User, error)
+	GetByEmail(context.Context, string) (model.User, error)
+	GetByID(context.Context, uuid.UUID) (model.User, error)
+	List(context.Context, int, int) ([]model.User, error)
+	Update(context.Context, uuid.UUID, repository.UpdateUserParams) (model.User, error)
+	Delete(context.Context, uuid.UUID) error
 }
 
 type RegisterInput struct {
@@ -59,7 +68,7 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-func NewAuthService(users *repository.UserRepository, cfg config.Config) *AuthService {
+func NewAuthService(users userStore, cfg config.Config) *AuthService {
 	return &AuthService{users: users, cfg: cfg}
 }
 
