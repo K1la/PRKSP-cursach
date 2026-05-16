@@ -3,16 +3,19 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
+import { ProtectedRoute } from "@/components/auth/protected-route";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/components/ui/toast";
 import { getParkingLot, updateParkingLot } from "@/lib/api";
 
 export default function EditParkingPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const [error, setError] = useState("");
+  const { toast } = useToast();
   const [form, setForm] = useState({
     name: "",
     description: "",
@@ -55,13 +58,17 @@ export default function EditParkingPage() {
         price_per_hour: Number(form.price_per_hour),
         is_active: form.is_active,
       });
+      toast({ title: "Парковка обновлена" });
       router.push(`/parking/${params.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось обновить парковку");
+      const message = err instanceof Error ? err.message : "Не удалось обновить парковку";
+      setError(message);
+      toast({ title: "Ошибка", description: message, variant: "error" });
     }
   }
 
   return (
+    <ProtectedRoute roles={["owner", "admin"]}>
     <main className="mx-auto max-w-2xl px-4 py-8">
       <Card>
         <CardHeader>
@@ -92,5 +99,6 @@ export default function EditParkingPage() {
         </CardContent>
       </Card>
     </main>
+    </ProtectedRoute>
   );
 }

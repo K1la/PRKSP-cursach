@@ -13,7 +13,7 @@ import (
 )
 
 type UserService struct {
-	users *repository.UserRepository
+	users userStore
 }
 
 type UpdateProfileInput struct {
@@ -27,7 +27,7 @@ type UpdateUserInput struct {
 	Role  model.UserRole `json:"role"`
 }
 
-func NewUserService(users *repository.UserRepository) *UserService {
+func NewUserService(users userStore) *UserService {
 	return &UserService{users: users}
 }
 

@@ -7,6 +7,7 @@ import { useAuth } from "@/components/auth/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/components/ui/toast";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -14,6 +15,7 @@ export default function RegisterPage() {
   const [form, setForm] = useState({ email: "", password: "", name: "", phone: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -21,9 +23,12 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await register({ ...form, phone: form.phone || undefined });
+      toast({ title: "Аккаунт создан" });
       router.push("/dashboard");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось зарегистрироваться");
+      const message = err instanceof Error ? err.message : "Не удалось зарегистрироваться";
+      setError(message);
+      toast({ title: "Ошибка регистрации", description: message, variant: "error" });
     } finally {
       setLoading(false);
     }

@@ -12,8 +12,13 @@ import (
 )
 
 type ReviewService struct {
-	reviews  *repository.ReviewRepository
-	parkings *repository.ParkingRepository
+	reviews  reviewStore
+	parkings parkingGetter
+}
+
+type reviewStore interface {
+	Create(context.Context, repository.CreateReviewParams) (model.Review, error)
+	ListByParkingLot(context.Context, uuid.UUID, int, int) ([]model.Review, error)
 }
 
 type ReviewInput struct {
@@ -21,7 +26,7 @@ type ReviewInput struct {
 	Comment *string `json:"comment"`
 }
 
-func NewReviewService(reviews *repository.ReviewRepository, parkings *repository.ParkingRepository) *ReviewService {
+func NewReviewService(reviews reviewStore, parkings parkingGetter) *ReviewService {
 	return &ReviewService{reviews: reviews, parkings: parkings}
 }
 

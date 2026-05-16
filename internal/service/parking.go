@@ -13,7 +13,16 @@ import (
 )
 
 type ParkingService struct {
-	parkings *repository.ParkingRepository
+	parkings parkingStore
+}
+
+type parkingStore interface {
+	List(context.Context, repository.ParkingLotFilter) ([]model.ParkingLot, error)
+	GetByID(context.Context, uuid.UUID) (model.ParkingLot, error)
+	Create(context.Context, repository.CreateParkingLotParams) (model.ParkingLot, error)
+	Update(context.Context, uuid.UUID, repository.UpdateParkingLotParams) (model.ParkingLot, error)
+	Delete(context.Context, uuid.UUID) error
+	ListSpots(context.Context, uuid.UUID) ([]model.ParkingSpot, error)
 }
 
 type ParkingLotInput struct {
@@ -32,11 +41,13 @@ type ParkingFilter struct {
 	Latitude  *float64
 	Longitude *float64
 	RadiusKM  *float64
+	MaxPrice  *float64
+	SpotType  *model.SpotType
 	Limit     int
 	Offset    int
 }
 
-func NewParkingService(parkings *repository.ParkingRepository) *ParkingService {
+func NewParkingService(parkings parkingStore) *ParkingService {
 	return &ParkingService{parkings: parkings}
 }
 
@@ -53,12 +64,20 @@ func (s *ParkingService) List(ctx context.Context, filter ParkingFilter) ([]mode
 			return nil, ValidationError("radius", "radius must be positive")
 		}
 	}
+	if filter.MaxPrice != nil && *filter.MaxPrice < 0 {
+		return nil, ValidationError("max_price", "max_price must be non-negative")
+	}
+	if filter.SpotType != nil && *filter.SpotType != model.SpotStandard && *filter.SpotType != model.SpotDisabled && *filter.SpotType != model.SpotElectric && *filter.SpotType != model.SpotVIP {
+		return nil, ValidationError("spot_type", "invalid spot type")
+	}
 
 	return s.parkings.List(ctx, repository.ParkingLotFilter{
 		Query:     filter.Query,
 		Latitude:  filter.Latitude,
 		Longitude: filter.Longitude,
 		RadiusKM:  filter.RadiusKM,
+		MaxPrice:  filter.MaxPrice,
+		SpotType:  filter.SpotType,
 		Limit:     filter.Limit,
 		Offset:    filter.Offset,
 	})

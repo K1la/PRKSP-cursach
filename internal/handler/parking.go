@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 
+	"github.com/username/parking-service/internal/model"
 	"github.com/username/parking-service/internal/service"
 )
 
@@ -23,12 +24,24 @@ func (api *API) listParkingLots(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", "invalid radius", "radius")
 		return
 	}
+	maxPrice, err := parseOptionalFloat(r.URL.Query().Get("max_price"))
+	if err != nil {
+		WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", "invalid max_price", "max_price")
+		return
+	}
+	var spotType *model.SpotType
+	if rawSpotType := r.URL.Query().Get("spot_type"); rawSpotType != "" {
+		value := model.SpotType(rawSpotType)
+		spotType = &value
+	}
 
 	lots, err := api.parkings.List(r.Context(), service.ParkingFilter{
 		Query:     r.URL.Query().Get("q"),
 		Latitude:  lat,
 		Longitude: lng,
 		RadiusKM:  radius,
+		MaxPrice:  maxPrice,
+		SpotType:  spotType,
 		Limit:     limit,
 		Offset:    offset,
 	})
