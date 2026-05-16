@@ -5,10 +5,14 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { useAuth } from "@/components/auth/auth-provider";
+import { ProtectedRoute } from "@/components/auth/protected-route";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useToast } from "@/components/ui/toast";
 import { adminStats, cancelBooking, listMyBookings, listParkingLots, listUsers, updateMe } from "@/lib/api";
 import type { AdminStats, Booking, ParkingLot, User } from "@/types/parking";
 
@@ -21,6 +25,8 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [profile, setProfile] = useState({ name: "", phone: "" });
   const [error, setError] = useState("");
+  const [bookingToCancel, setBookingToCancel] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const load = useCallback(async () => {
     if (!user) {
@@ -56,14 +62,24 @@ export default function DashboardPage() {
     try {
       await updateMe({ name: profile.name, phone: profile.phone || null });
       await refreshUser();
+      toast({ title: "Профиль обновлен" });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось обновить профиль");
+      const message = err instanceof Error ? err.message : "Не удалось обновить профиль";
+      setError(message);
+      toast({ title: "Ошибка", description: message, variant: "error" });
     }
   }
 
   async function handleCancel(id: string) {
-    await cancelBooking(id);
-    await load();
+    try {
+      await cancelBooking(id);
+      await load();
+      toast({ title: "Бронь отменена" });
+    } catch (err) {
+      toast({ title: "Ошибка", description: err instanceof Error ? err.message : "Не удалось отменить бронь", variant: "error" });
+    } finally {
+      setBookingToCancel(null);
+    }
   }
 
   if (loading || !user) {
@@ -73,6 +89,7 @@ export default function DashboardPage() {
   const ownedLots = user.role === "admin" ? lots : lots.filter((lot) => lot.owner_id === user.id);
 
   return (
+    <ProtectedRoute>
     <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
@@ -132,22 +149,34 @@ export default function DashboardPage() {
               <CardTitle>Мои бронирования</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {bookings.map((booking) => (
-                <div key={booking.id} className="flex flex-col gap-3 border-b border-border pb-3 md:flex-row md:items-center md:justify-between">
-                  <div>
-                    <p className="font-medium">{booking.vehicle_plate}</p>
-                    <p className="text-sm text-muted">
-                      {new Date(booking.start_time).toLocaleString()} - {new Date(booking.end_time).toLocaleString()}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge>{booking.status}</Badge>
-                    <Button variant="outline" onClick={() => handleCancel(booking.id)}>
-                      Отменить
-                    </Button>
-                  </div>
-                </div>
-              ))}
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Авто</TableHead>
+                    <TableHead>Период</TableHead>
+                    <TableHead>Статус</TableHead>
+                    <TableHead />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {bookings.map((booking) => (
+                    <TableRow key={booking.id}>
+                      <TableCell className="font-medium">{booking.vehicle_plate}</TableCell>
+                      <TableCell>
+                        {new Date(booking.start_time).toLocaleString()} - {new Date(booking.end_time).toLocaleString()}
+                      </TableCell>
+                      <TableCell>
+                        <Badge>{booking.status}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="outline" onClick={() => setBookingToCancel(booking.id)}>
+                          Отменить
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
               {bookings.length === 0 ? <p className="text-sm text-muted">Бронирований пока нет.</p> : null}
             </CardContent>
           </Card>
@@ -178,22 +207,43 @@ export default function DashboardPage() {
               <CardHeader>
                 <CardTitle>Пользователи</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                {users.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between border-b border-border pb-3">
-                    <div>
-                      <p className="font-medium">{item.name}</p>
-                      <p className="text-sm text-muted">{item.email}</p>
-                    </div>
-                    <Badge>{item.role}</Badge>
-                  </div>
-                ))}
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Имя</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Роль</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {users.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell className="font-medium">{item.name}</TableCell>
+                        <TableCell>{item.email}</TableCell>
+                        <TableCell>
+                          <Badge>{item.role}</Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
           )}
         </section>
       </div>
+      <Dialog
+        destructive
+        open={bookingToCancel !== null}
+        title="Отменить бронирование?"
+        description="Действие изменит статус брони на cancelled, если она еще pending или active."
+        confirmText="Отменить бронь"
+        onClose={() => setBookingToCancel(null)}
+        onConfirm={() => bookingToCancel && handleCancel(bookingToCancel)}
+      />
     </main>
+    </ProtectedRoute>
   );
 }
 

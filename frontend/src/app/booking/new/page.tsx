@@ -1,19 +1,21 @@
 "use client";
 
-import { FormEvent, useState } from "react";
-import { Suspense } from "react";
+import { FormEvent, Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { useAuth } from "@/components/auth/auth-provider";
+import { ProtectedRoute } from "@/components/auth/protected-route";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/components/ui/toast";
 import { createBooking } from "@/lib/api";
 
 export default function NewBookingPage() {
   return (
     <Suspense fallback={<main className="mx-auto max-w-md px-4 py-10 text-muted">Загрузка...</main>}>
-      <NewBookingForm />
+      <ProtectedRoute>
+        <NewBookingForm />
+      </ProtectedRoute>
     </Suspense>
   );
 }
@@ -21,7 +23,6 @@ export default function NewBookingPage() {
 function NewBookingForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user } = useAuth();
   const [form, setForm] = useState({
     spotId: searchParams.get("spotId") ?? "",
     start: "",
@@ -30,6 +31,7 @@ function NewBookingForm() {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -42,25 +44,15 @@ function NewBookingForm() {
         end_time: new Date(form.end).toISOString(),
         vehicle_plate: form.plate,
       });
+      toast({ title: "Бронь создана" });
       router.push("/dashboard");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось создать бронь");
+      const message = err instanceof Error ? err.message : "Не удалось создать бронь";
+      setError(message);
+      toast({ title: "Ошибка бронирования", description: message, variant: "error" });
     } finally {
       setLoading(false);
     }
-  }
-
-  if (!user) {
-    return (
-      <main className="mx-auto max-w-md px-4 py-10">
-        <Card>
-          <CardContent className="pt-4">
-            <p className="mb-4 text-muted">Для бронирования нужно войти.</p>
-            <Button onClick={() => router.push("/login")}>Войти</Button>
-          </CardContent>
-        </Card>
-      </main>
-    );
   }
 
   return (

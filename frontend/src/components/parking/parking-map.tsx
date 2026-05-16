@@ -17,11 +17,13 @@ const markerIcon = L.icon({
 
 type ParkingMapProps = {
   parkingLots: ParkingLot[];
+  center?: [number, number];
+  zoom?: number;
 };
 
-export default function ParkingMap({ parkingLots }: ParkingMapProps) {
+export default function ParkingMap({ parkingLots, center = [55.7558, 37.6173], zoom = 11 }: ParkingMapProps) {
   return (
-    <MapContainer center={[55.7558, 37.6173]} zoom={11} scrollWheelZoom={false}>
+    <MapContainer center={center} zoom={zoom} scrollWheelZoom={false}>
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

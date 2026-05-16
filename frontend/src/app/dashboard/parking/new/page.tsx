@@ -3,15 +3,18 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { ProtectedRoute } from "@/components/auth/protected-route";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/components/ui/toast";
 import { createParkingLot } from "@/lib/api";
 
 export default function NewParkingPage() {
   const router = useRouter();
   const [error, setError] = useState("");
+  const { toast } = useToast();
   const [form, setForm] = useState({
     name: "",
     description: "",
@@ -35,13 +38,17 @@ export default function NewParkingPage() {
         total_spots: Number(form.total_spots),
         price_per_hour: Number(form.price_per_hour),
       });
+      toast({ title: "Парковка создана" });
       router.push(`/parking/${lot.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось создать парковку");
+      const message = err instanceof Error ? err.message : "Не удалось создать парковку";
+      setError(message);
+      toast({ title: "Ошибка", description: message, variant: "error" });
     }
   }
 
   return (
+    <ProtectedRoute roles={["owner", "admin"]}>
     <main className="mx-auto max-w-2xl px-4 py-8">
       <Card>
         <CardHeader>
@@ -68,5 +75,6 @@ export default function NewParkingPage() {
         </CardContent>
       </Card>
     </main>
+    </ProtectedRoute>
   );
 }
