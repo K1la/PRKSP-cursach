@@ -13,7 +13,7 @@ Fullstack service for searching and booking parking spots. The backend is writte
 ## Quick Start
 
 ```bash
-docker-compose up --build
+docker compose up --build
 ```
 
 Backend: `http://localhost:8080`  
@@ -36,7 +36,7 @@ Seed demo data:
 ```bash
 make seed
 # or, if the database is running in Docker:
-docker compose run --rm seed
+docker compose --profile tools run --rm seed
 ```
 
 Demo credentials:
@@ -72,8 +72,11 @@ docs/uml                Mermaid UML diagrams
 make test
 make fuzz
 make seed
+make seed-docker
 make frontend-dev
+make frontend-lint
 make frontend-build
+make check
 ```
 
 ## Technologies
@@ -98,6 +101,17 @@ go test ./... -count=1
 go test ./internal/validator/ -fuzz=. -fuzztime=30s
 cd frontend && npm run lint && npm run build
 ```
+
+## Smoke Checklist
+
+1. Run `docker compose up --build`.
+2. Open `http://localhost:8080/health` and check `db: connected`.
+3. Run `docker compose --profile tools run --rm seed`.
+4. Open `http://localhost:3000`.
+5. Login as `user1@parkease.ru / password123`.
+6. Search parking lots, open a parking lot, create a booking, cancel it in dashboard.
+7. Login as `owner1@parkease.ru / password123`, create and edit a parking lot.
+8. Login as `admin@parkease.ru / password123`, check stats and users table.
 
 ## 12-Factor App
 
